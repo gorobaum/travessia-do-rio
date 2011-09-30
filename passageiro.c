@@ -28,10 +28,14 @@ void atravessa(int margem)
 }
 int main(int argc, char *argv[])
 {
-    /* le margem de origem como paremetro */
-    embarca(1);
-    atravessa(1);
-    desembarca(1);
+    int margem;
+    if ( argc != 2 ) printf("Passar margem. 0 = Esquerda, 1 = Direita. \n");
+    else {
+        margem = atoi(argv[1]);
+        embarca(1);
+        atravessa(1);
+        desembarca(1);
+    }
     /* imprime passageiro saiu do pier */
     exit(0);
 }
