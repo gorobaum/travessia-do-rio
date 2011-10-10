@@ -16,9 +16,9 @@ union semun {
     struct seminfo *__buf;
 };
 
+int shmid;
 
 char* getMemo(int memokey, int size) {
-    int shmid;
     shmid = shmget(memokey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
     return (char *)shmat(shmid, 0, 0);
 }
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     saddr = getMemo(memokey, 10*sizeof(int) );
     pid = getpid();
     printf("SADDR = %d PID = %d\n", (int)saddr, pid);
-    sleep(100);
+    /*sleep(100);*/
     if ( saddr[0] == 0 ) {};
 
 
@@ -60,6 +60,8 @@ int main(int argc, char *argv[]) {
         atravessa(margem);
         desembarca(margem);
     }
+    shmdt(saddr);
+    shmctl(shmid, IPC_RMID, 0);
     /* imprime passageiro saiu do pier */
     exit(0);
 }
