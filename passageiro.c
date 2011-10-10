@@ -19,7 +19,7 @@ union semun {
 
 char* getMemo(int memokey, int size) {
     int shmid;
-    shmid = shmget(memokey, SHM_SIZE, IPC_CREAT | S_IRUSR | S_IWUSR);
+    shmid = shmget(memokey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
     return (char *)shmat(shmid, 0, 0);
 }
 
@@ -40,13 +40,16 @@ void atravessa(int margem) {
 }
 
 int main(int argc, char *argv[]) {
-    int margem, memokey = 1;
+    int margem, memokey = 1, pid = 0;
     char* saddr;
     union semun arg;
     struct sembuf wait={0, -1, 0};
     struct sembuf signal={0, 1, 0};
 
     saddr = getMemo(memokey, 10*sizeof(int) );
+    pid = getpid();
+    printf("SADDR = %d PID = %d\n", (int)saddr, pid);
+    sleep(100);
     if ( saddr[0] == 0 ) {};
 
 
