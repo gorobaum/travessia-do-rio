@@ -1,0 +1,2 @@
+OBJS = \
+    .temp/passageiro.o \
