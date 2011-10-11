@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 
+#define SHM_SIZE    (10*sizeof(int))
+
 #define ESQUERDA 0
 #define DIREITA 1
 
@@ -21,7 +23,7 @@ union semun {
 
 /* Dados compartilhados. */
 typedef struct {
-
+    int current_margin; /* por exemplo */
 } shm_data;
 
 /* Informações sobreeste processo. */
@@ -46,16 +48,17 @@ static int semid;
 static int pid = 0;
 */
 
-/* Inicializa a memória compartilhada, verificando se ela já foi criada.
- * Se já foi, adquire o ID dela.
- * Se não, cria ela e armazena o ID dela.
- * Em ambos os casos, shm.id recebe o ID. */
+/* Inicializa a memória compartilhada, verificando se ela já não foi criada.
+ * Se já foi, recupera ela.
+ * Se não, cria ela.
+ * Em ambos os casos, a estrutura shm guarda o resultado. */
 void SHMinit(int memkey, size_t size) {
     int id;
     if ((id = shmget(memkey, size, IPC_CREAT | IPC_EXCL | 0666)) == -1)
-        return shmget(memkey, size, 0666);
+        shm.id = shmget(memkey, size, 0666);
     else
-        return id;
+        shm.id = id;
+    shm.data = (shm_data*)shmat(shm.id, 0, 0);
 }
 
 char* getMemo(int memokey, int size) {
@@ -92,9 +95,10 @@ int main(int argc, char *argv[]) {
     arg.val = 1;
     memokey = ftok( "src/passageiro.c", 'M' );
     semkey = ftok( "Makefile", 'A');
-    saddr = getMemo(memokey, 10*sizeof(int) );
+    /*saddr = getMemo(memokey, 10*sizeof(int) );*/
     semInit(semkey);
     semctl(sem.id, 0, SETVAL, arg);
+    SHMinit(memokey, SHM_SIZE);
 
     proc.id = getpid();
     printf("SADDR = %d PID = %d\n", (int)saddr, proc.id);
