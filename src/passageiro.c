@@ -1,74 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <semaphore.h>
-#include <unistd.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/sem.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-
-#define SHM_SIZE    (10*sizeof(int))
+#include <shmemo.h>
+#include <semaf.h>
 
 #define ESQUERDA 0
 #define DIREITA 1
 
-/* Union usada como quarto argumento da função semctl. */
-union semun {
-    int             val;
-    struct semid_ds *buf;
-    unsigned short  *array;
-    struct seminfo  *__buf;
-};
-
-/* Dados compartilhados. */
-typedef struct {
-    int current_margin; /* por exemplo */
-} shm_data;
-
-/* Informações sobreeste processo. */
+/* Informações sobre este processo. */
 static struct {
     int id;
 } proc = { 0 };
-
-/* Memória compartilhada. */
-static struct {
-    int         id;
-    shm_data    *data;
-} shm = { -1, NULL };
-
-/* Semáforos. */
-static struct {
-    int id;
-} sem = { -1 };
-
-/*
-static int shmid;
-static int semid;
-static int pid = 0;
-*/
-
-/* Inicializa a memória compartilhada, verificando se ela já não foi criada.
- * Se já foi, recupera ela.
- * Se não, cria ela.
- * Em ambos os casos, a estrutura shm guarda o resultado. */
-void SHMinit(int memkey, size_t size) {
-    int id;
-    if ((id = shmget(memkey, size, IPC_CREAT | IPC_EXCL | 0666)) == -1)
-        shm.id = shmget(memkey, size, 0666);
-    else
-        shm.id = id;
-    shm.data = (shm_data*)shmat(shm.id, 0, 0);
-}
-
-char* getMemo(int memokey, int size) {
-    shm.id = shmget(memokey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
-    return (char *)shmat(shm.id, 0, 0);
-}
-
-void semInit(int semkey) {
-    sem.id = semget( semkey, 1, IPC_CREAT | S_IRUSR | S_IWUSR );
-}
 
 void embarca(int margem) {
     /* Aqui o passageiro embarca na margem especificada se possivel
@@ -86,22 +27,24 @@ void atravessa(int margem) {
 }
 
 int main(int argc, char *argv[]) {
-    int margem, memokey, /*pid = 0,*/ semkey;
-    char* saddr;
+    int margem, memkey, semkey;
     union semun arg;
     struct sembuf wait={0, -1, 0};
     struct sembuf signal={0, 1, 0};
 
-    arg.val = 1;
-    memokey = ftok( "src/passageiro.c", 'M' );
-    semkey = ftok( "Makefile", 'A');
-    /*saddr = getMemo(memokey, 10*sizeof(int) );*/
-    semInit(semkey);
-    semctl(sem.id, 0, SETVAL, arg);
+    /* Inicialização da memória compartilhada. */
+    memkey = getMemKey();
     SHMinit(memokey, SHM_SIZE);
+    
+    /* Incialização dos semáforos. */
+    arg.val = 1;
+    semkey = getSemKey();
+    semInit(semkey);
+    semCtl(sem.id, arg);
+    
 
     proc.id = getpid();
-    printf("SADDR = %d PID = %d\n", (int)saddr, proc.id);
+    printf("PID = %d\n", proc.id);
     /*sleep(100);*/
 
     if ( argc != 2 ) printf("Passar margem. 0 = Esquerda, 1 = Direita. \n");
@@ -111,8 +54,9 @@ int main(int argc, char *argv[]) {
         atravessa(margem);
         desembarca(margem);
     }
-    shmdt(saddr);
-    shmctl(shm.id, IPC_RMID, 0);
+
+    shmDetach(shm.data);
+    shmCtl(shm.id); 
     /* imprime passageiro saiu do pier */
     exit(0);
 }
