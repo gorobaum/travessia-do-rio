@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <unistd.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/sem.h>
@@ -17,12 +18,16 @@ union semun {
 };
 
 int shmid;
+int semid;
 
 char* getMemo(int memokey, int size) {
     shmid = shmget(memokey, size, IPC_CREAT | S_IRUSR | S_IWUSR);
     return (char *)shmat(shmid, 0, 0);
 }
 
+void semInit(int semkey) {
+    semid = semget( semkey, 1, IPC_CREAT | S_IRUSR | S_IWUSR );
+}
 
 void embarca(int margem) {
     /* Aqui o passageiro embarca na margem especificada se possivel
@@ -40,18 +45,22 @@ void atravessa(int margem) {
 }
 
 int main(int argc, char *argv[]) {
-    int margem, memokey = 1, pid = 0;
+    int margem, memokey, pid = 0, semkey;
     char* saddr;
     union semun arg;
     struct sembuf wait={0, -1, 0};
     struct sembuf signal={0, 1, 0};
 
+    arg.val = 1;
+    memokey = ftok( "src/passageiro.c", 'M' );
+    semkey = ftok( "Makefile", 'A');
     saddr = getMemo(memokey, 10*sizeof(int) );
+    semInit(semkey);
+    semctl(semid, 0, SETVAL, arg);
+
     pid = getpid();
     printf("SADDR = %d PID = %d\n", (int)saddr, pid);
     /*sleep(100);*/
-    if ( saddr[0] == 0 ) {};
-
 
     if ( argc != 2 ) printf("Passar margem. 0 = Esquerda, 1 = Direita. \n");
     else {
