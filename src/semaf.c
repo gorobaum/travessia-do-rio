@@ -1,12 +1,16 @@
 
 #include <stdio.h>
 #include <semaphore.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sem.h>
 #include <sys/ipc.h>
 
 #include "semaf.h"
+
+#define SEMKEY_PATH_NAME    "Makefile"
+#define SEMKEY_PROJ_ID      'A'
 
 #define OP_NUM              (2)
 #define OP_WAIT             (-1)
@@ -24,10 +28,21 @@
 /* Semáforos. */
 static struct {
     int id;
-} sem = { -1 };
+    int lock;
+} sem = { -1, -1 };
 
 static int getSemKey() {
-    return ftok( "Makefile", 'A');
+    return ftok( SEMKEY_PATH_NAME, SEMKEY_PROJ_ID);
+}
+
+void signalInit(int semkey) {
+    if ((sem.lock = shmget(semkey, 4, IPC_CREAT | 0666)) == -1)
+        puts("OH NOES");
+}
+
+void waitInit(int semkey) {
+    if (sem.lock == -1)
+        while ((sem.lock = shmget(semkey, 0, 0666)) == -1);
 }
 
 void semInit() {
@@ -41,8 +56,10 @@ void semInit() {
     if ((sem.id = semget(semkey, SEM_NUM, IPC_CREAT | IPC_EXCL | 0666)) != -1) {
         semctl(sem.id, 0, SETALL, arg);
         semop(sem.id, &signal_shm, 1);
+        signalInit(semkey);
     }
     else sem.id = semget(semkey, SEM_NUM, 0666 );
+    waitInit(semkey);
 }
 
 void semCtl( int id, union semun arg ) {
@@ -51,5 +68,6 @@ void semCtl( int id, union semun arg ) {
 
 void semRemove() {
     semctl(sem.id, 0, IPC_RMID, 0);
+    shmctl(sem.lock, IPC_RMID, 0);
 }
 
