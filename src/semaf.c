@@ -8,6 +8,13 @@
 
 #include "semaf.h"
 
+/* Acho que vamos precisar de quatro semáforos. */
+#define SEM_NUM             (3)
+/* Semáforo MUTEX da memória compartilhada. */
+#define SHM_MUTEX           (0)
+/* Semáforos MUTEX para entrar no barco em cada margem do rio. */
+#define SHIP_MUTEX(margin)  ((margin%2)+1)
+
 /* Semáforos. */
 static struct {
     int id;
@@ -20,9 +27,10 @@ static int getSemKey() {
 void semInit() {
     union semun arg;
     int semkey = getSemKey();
+
     printf("SEM key: %x\n", semkey);
+    sem.id = semget( semkey, SEM_NUM, IPC_CREAT | 0666 );
     arg.val = 1;
-    sem.id = semget( semkey, 1, IPC_CREAT | 0666 );
     semctl(sem.id, 0, SETVAL, arg);
 }
 

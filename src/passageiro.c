@@ -1,10 +1,14 @@
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
 #include <semaphore.h>
 #include <sys/sem.h>
 #include <unistd.h>
-#include <shmemo.h>
-#include <semaf.h>
+
+#include "shmemo.h"
+#include "semaf.h"
 
 #define ESQUERDA 0
 #define DIREITA 1
@@ -35,7 +39,8 @@ int main(int argc, char *argv[]) {
     struct sembuf wait={0, -1, 0};
     struct sembuf signal={0, 1, 0};
 
-    
+    srand(time(NULL));
+
     /* Incialização dos semáforos. */
     semInit();
 
@@ -59,6 +64,6 @@ int main(int argc, char *argv[]) {
     shmRemove(); 
     semRemove();
     /* imprime passageiro saiu do pier */
-    exit(0);
+    return EXIT_SUCCESS;
 }
 
