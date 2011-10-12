@@ -1,5 +1,5 @@
 PROG_NAME = passageiro
-FLAGS = -D_XOPEN_SOURCE=600
+FLAGS = -D_XOPEN_SOURCE=600 -Isrc
 
 SRC_DIR = src
 OBJ_DIR = .temp

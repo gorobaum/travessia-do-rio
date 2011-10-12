@@ -1,21 +1,18 @@
+
 #ifndef SHMEMO_H_
 #define SHMEMO_H_
 
-/* Dados compartilhados. */
-typedef struct {
-    int current_margin; /* Os semaforos vão ficar aqui tbm né? */
-} shm_data;
+/* OBS: essas funções exigem regiões críticas. */
 
-/* Memória compartilhada. */
-static struct {
-    int         id;
-    shm_data    *data;
-} shm = { -1, NULL };
+/* Inicializa a memória compartilhada, verificando se ela
+ * já não foi criada. Se já foi, recupera ela. Se não,
+ * cria ela. */
+void shmInit();
 
-void SHMinit(int memkey, size_t size);
 char* getMemo(int memkey, int size);
-int getMemKey() { return ftok( "src/passageiro.c", 'M' ); }
-void shmDetach(int shaddr) { shmdt(shaddr); }
-void shmCtl(int id) { shmctl(id, IPC_RMID, 0); } 
+
+void shmDetach();
+
+void shmRemove();
 
 #endif

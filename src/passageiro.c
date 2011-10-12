@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <semaphore.h>
+#include <sys/sem.h>
+#include <unistd.h>
 #include <shmemo.h>
 #include <semaf.h>
 
@@ -32,16 +35,13 @@ int main(int argc, char *argv[]) {
     struct sembuf wait={0, -1, 0};
     struct sembuf signal={0, 1, 0};
 
-    /* Inicialização da memória compartilhada. */
-    memkey = getMemKey();
-    SHMinit(memokey, SHM_SIZE);
     
     /* Incialização dos semáforos. */
-    arg.val = 1;
-    semkey = getSemKey();
-    semInit(semkey);
-    semCtl(sem.id, arg);
-    
+    semInit();
+
+    /* Inicialização da memória compartilhada. */
+    /*memkey = getMemKey();*/
+    shmInit();
 
     proc.id = getpid();
     printf("PID = %d\n", proc.id);
@@ -55,8 +55,9 @@ int main(int argc, char *argv[]) {
         desembarca(margem);
     }
 
-    shmDetach(shm.data);
-    shmCtl(shm.id); 
+    shmDetach();
+    shmRemove(); 
+    semRemove();
     /* imprime passageiro saiu do pier */
     exit(0);
 }

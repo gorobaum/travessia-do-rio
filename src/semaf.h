@@ -9,12 +9,11 @@ union semun {
     struct seminfo  *__buf;
 };
 
-/* Semáforos. */
-static struct {
-    int id;
-} sem = { -1 };
-
 void semInit();
-int getSemKey() { ftok( "Makefile", 'A'); }
+
+void semCtl(int id, union semun arg);
+
+void semRemove();
 
 #endif
+
