@@ -55,13 +55,31 @@ void semInit() {
     waitFirstOp();
 }
 
+void semAddOp(int semaph, int op) {
+    if (sem.nops == MAX_NOPS)
+        semExecOps();
+    sem.ops[sem.nops].sem_num = semaph;
+    sem.ops[sem.nops].sem_op = op;
+    sem.ops[sem.nops].sem_flg = 0;
+    sem.nops++;
+}
+
+void semExecOps() {
+    if (sem.nops > 0) {
+        semop(sem.id, sem.ops, sem.nops);
+        sem.nops = 0;
+    }
+}
+
 void semWait(int semaph) {
-    struct sembuf signal = SEMOP(OP_WAIT, semaph);
+    struct sembuf signal = SEMOP(OP_WAIT, 0);
+    signal.sem_num = semaph;
     semop(sem.id, &signal, 1);
 }
 
 void semSignal(int semaph) {
-    struct sembuf signal = SEMOP(OP_SIGNAL, semaph);
+    struct sembuf signal = SEMOP(OP_SIGNAL, 0);
+    signal.sem_num = semaph;
     semop(sem.id, &signal, 1);
 }
 
