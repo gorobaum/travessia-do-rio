@@ -12,4 +12,6 @@ void shmDetach();
 
 void shmRemove();
 
+void shmShipCapacityUpdate(int delta);
+
 #endif

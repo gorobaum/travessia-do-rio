@@ -40,6 +40,8 @@ static void loadDefaultValues() {
     shm.data->passenger_num = 0;
     shm.data->ship_current_margin = RANDOM_MARGIN;
     shm.data->ship_capacity = MAX_SHIP_CAPACITY;
+    if(shm.data->ship_current_margin == ESQUERDA) semSignal(EMBLEFT);
+    else semSignal(EMBRIGHT);
 }
 
 void shmInit() {
@@ -73,5 +75,11 @@ void shmDetach() {
 
 void shmRemove() {
     shmctl(shm.id, IPC_RMID, 0);
+}
+
+void shmShipCapacityUpdate(int delta) {
+    semWait(SHM_MUTEX);
+    shm.data->ship_capacity += delta;
+    semSignal(SHM_MUTEX);
 }
 

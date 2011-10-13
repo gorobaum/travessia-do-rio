@@ -17,8 +17,10 @@ static struct {
 } passageiro = { 0, 0 };
 
 void embarca(int margem) {
-    /* Aqui o passageiro embarca na margem especificada se possivel
-    ou espera o barco chegar a sua margem do rio */
+    semWait(SHIP_MUTEX(margem));
+    shmShipCapacityUpdate(-1);  
+    
+    semSignal(SHIP_MUTEX(margem));
 }
 
 void desembarca(int margem) {

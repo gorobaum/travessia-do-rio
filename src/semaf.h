@@ -9,10 +9,16 @@
 /* Operação signal. */
 #define OP_SIGNAL           (1)
 
-/* Nós usamos três semáforos. */
-#define SEM_NUM             (3)
+/* Nós usamos seis semáforos. */
+#define SEM_NUM             (6)
 /* Semáforo MUTEX da memória compartilhada. */
 #define SHM_MUTEX           (0)
+#define EMBLEFT             (1)
+#define EMBRIGHT            (2)
+#define DESLEFT             (3)
+#define DESRIGHT            (4)
+#define T                   (5)
+
 /* Semáforos MUTEX para cada margem do rio. */
 #define SHIP_MUTEX(margin)  ((margin%2)+1)
 
