@@ -57,8 +57,7 @@ int main(int argc, char *argv[]) {
         desembarca(margem);
     }
 
-    shmDetach();
-    shmRemove(); 
+    shmCleanUp();
     semRemove();
     /* imprime passageiro saiu do pier */
     return EXIT_SUCCESS;

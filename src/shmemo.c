@@ -9,6 +9,7 @@
 #include <sys/ipc.h>
 
 #include "shmemo.h"
+#include "semaf.h"
 
 #define SHM_SIZE            (sizeof(shm_data))
 #define KEY_PATH_NAME       "src/passageiro.c"
@@ -19,9 +20,6 @@
 
 /* Dados compartilhados. */
 typedef struct {
-    /* Os semaforos vão ficar aqui tbm né? */
-    /* Os semáforos são obtidos com semget, não precisamos
-     * compartilhar eles. */
     size_t  passenger_num;
     int     ship_current_margin;
     size_t  ship_capacity;
@@ -48,6 +46,7 @@ void shmInit() {
     int do_init = 0,
         memkey = getMemKey();
     printf("SHM key: %x\n", memkey);
+    semWait(SHM_MUTEX); 
     if ((shm.id = shmget(memkey, SHM_SIZE, 0666)) == -1) {
         shm.id = shmget(memkey, SHM_SIZE, IPC_CREAT | 0666);
         do_init = 1;
@@ -55,11 +54,17 @@ void shmInit() {
     shm.data = (shm_data*)shmat(shm.id, 0, 0);
     if (do_init) loadDefaultValues();
     shm.data->passenger_num++;
+    semSignal(SHM_MUTEX);
 }
 
-char* getMemo(int memkey, int size) {
-    /*shm.id = shmget(memokey, size, IPC_CREAT | S_IRUSR | S_IWUSR);*/
-    return (char *)shmat(shm.id, 0, 0);
+void shmCleanUp() {
+    int passenger_num;
+    
+    semWait(SHM_MUTEX);
+    passenger_num = shm.data->passenger_num--;
+    shmDetach();
+    if ( passenger_num == 0 ) shmRemove();
+    semSignal(SHM_MUTEX);
 }
 
 void shmDetach() {
@@ -69,8 +74,4 @@ void shmDetach() {
 void shmRemove() {
     shmctl(shm.id, IPC_RMID, 0);
 }
-
-
-
-
 
