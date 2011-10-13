@@ -20,7 +20,7 @@
 #define SEM_NUM             (3)
 /* Semáforo MUTEX da memória compartilhada. */
 #define SHM_MUTEX           (0)
-/* Semáforos MUTEX para entrar no barco em cada margem do rio. */
+/* Semáforos MUTEX para cada margem do rio. */
 #define SHIP_MUTEX(margin)  ((margin%2)+1)
 
 #define SEMOP(op, sem) { sem, op, 0 }
@@ -28,21 +28,23 @@
 /* Semáforos. */
 static struct {
     int id;
-    int lock;
-} sem = { -1, -1 };
+} sem = { -1 };
 
+/* Devolve a chave usada para identificar os semáforos. */
 static int getSemKey() {
     return ftok( SEMKEY_PATH_NAME, SEMKEY_PROJ_ID);
 }
 
-void signalInit(int semkey) {
-    if ((sem.lock = shmget(semkey, 4, IPC_CREAT | 0666)) == -1)
-        puts("OH NOES");
-}
+/* Espera até que a primeira operação seja executado sobre
+ * os semáforos, garantindo que eles estejam inicializados
+ * após essa função retornar. */
+static void waitFirstOp() {
+    struct semid_ds buf;
+    union semun arg;
 
-void waitInit(int semkey) {
-    if (sem.lock == -1)
-        while ((sem.lock = shmget(semkey, 0, 0666)) == -1);
+    arg.buf = &buf;
+    do semctl(sem.id, 0, IPC_STAT, arg);
+    while (buf.sem_otime == 0);
 }
 
 void semInit() {
@@ -56,10 +58,9 @@ void semInit() {
     if ((sem.id = semget(semkey, SEM_NUM, IPC_CREAT | IPC_EXCL | 0666)) != -1) {
         semctl(sem.id, 0, SETALL, arg);
         semop(sem.id, &signal_shm, 1);
-        signalInit(semkey);
     }
     else sem.id = semget(semkey, SEM_NUM, 0666 );
-    waitInit(semkey);
+    waitFirstOp();
 }
 
 void semCtl( int id, union semun arg ) {
@@ -68,6 +69,5 @@ void semCtl( int id, union semun arg ) {
 
 void semRemove() {
     semctl(sem.id, 0, IPC_RMID, 0);
-    shmctl(sem.lock, IPC_RMID, 0);
 }
 

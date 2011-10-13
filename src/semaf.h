@@ -9,10 +9,13 @@ union semun {
     struct seminfo  *__buf;
 };
 
+/* Inicializa os semáforos para esse proccesso.
+ * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
 
 void semCtl(int id, union semun arg);
 
+/* Remove os semáforos do sistema. */
 void semRemove();
 
 #endif
