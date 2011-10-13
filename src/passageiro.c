@@ -57,6 +57,8 @@ int main(int argc, char *argv[]) {
         semCleanUp();
     }
 
+    shmCleanUp();
+    semCleanUp();
     /* imprime passageiro saiu do pier */
     return EXIT_SUCCESS;
 }
