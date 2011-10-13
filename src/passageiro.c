@@ -20,19 +20,24 @@ char *margens[2] = { "ESQUERDA", "DIREITA" };
 
 void embarca(int margem) {
     shm_data *data;
-    semWait(EMBARK_MUTEX(margem));
+    if(!semTimedWait(EMBARK_MUTEX(margem), 10)) {
+        printf("Passageiro 0x%x desistiu da viagem.\n", passageiro.id);
+        exit(EXIT_SUCCESS);
+    }
     /*shmUpdateShipCapacity(-1);  */
     shmLock();
     data = shmGet();
     if (--data->ship_capacity)
-        semSignal(EMBARK_MUTEX(margem));
+        semAddOp(EMBARK_MUTEX(margem), OP_SIGNAL);
+        /*semSignal(EMBARK_MUTEX(margem));*/
     else {
         data->ship_current_margin = !margem;
         semAddOp(PASSAGE_BARRIER, 3*OP_SIGNAL);
         semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
-        semExecOps();
     }
-    shmUnlock();
+    semAddOp(SHM_MUTEX, OP_SIGNAL);
+    semExecOps();
+    /*shmUnlock();*/
 }
 
 void desembarca(int margem) {

@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <semaphore.h>
+#include <time.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,6 +14,14 @@
 #define SEMKEY_PROJ_ID      'A'
 
 #define SEMOP(op, sem) { sem, op, 0 }
+
+/* Union usada como quarto argumento da função semctl. */
+union semun {
+    int             val;
+    struct semid_ds *buf;
+    unsigned short  *array;
+    struct seminfo  *__buf;
+};
 
 /* Semáforos. */
 static struct {
@@ -75,6 +84,16 @@ void semWait(int semaph) {
     struct sembuf signal = SEMOP(OP_WAIT, 0);
     signal.sem_num = semaph;
     semop(sem.id, &signal, 1);
+}
+
+int semTimedWait(int semaph, size_t secs) {
+    struct sembuf   signal = SEMOP(OP_WAIT, 0);
+    struct timespec timeout = { 0, 0 };
+    signal.sem_num = semaph;
+    timeout.tv_sec = secs;
+    if (semtimedop(sem.id, &signal, 1, &timeout) == -1)
+        if (errno == EAGAIN) return 0;
+    return 1;
 }
 
 void semSignal(int semaph) {

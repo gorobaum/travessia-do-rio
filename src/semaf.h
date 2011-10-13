@@ -24,14 +24,6 @@
 #define ESQUERDA            (0)
 #define DIREITA             (1)
 
-/* Union usada como quarto argumento da função semctl. */
-union semun {
-    int             val;
-    struct semid_ds *buf;
-    unsigned short  *array;
-    struct seminfo  *__buf;
-};
-
 /* Inicializa os semáforos para esse proccesso.
  * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
@@ -48,6 +40,8 @@ void semExecOps();
 
 /* Operação wait sobre o semáforo indicado. */
 void semWait(int semaph);
+
+int semTimedWait(int semaph, size_t secs);
 
 /* Operação signal sobre o semáforo passado. */
 void semSignal(int semaph);

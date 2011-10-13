@@ -1,4 +1,4 @@
 # dependencies
-.temp/shmemo.o: src/shmemo.c
-.temp/passageiro.o: src/passageiro.c
-.temp/semaf.o: src/semaf.c
+.temp/shmemo.o: src/shmemo.c src/shmemo.h src/semaf.h
+.temp/passageiro.o: src/passageiro.c src/shmemo.h src/semaf.h
+.temp/semaf.o: src/semaf.c src/semaf.h
