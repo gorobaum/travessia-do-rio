@@ -10,10 +10,11 @@
 #include "shmemo.h"
 #include "semaf.h"
 
-/* Informações sobre este processo. */
+/* Informações sobre este passageiroesso. */
 static struct {
     int id;
-} proc = { 0 };
+    int margem;
+} passageiro = { 0, 0 };
 
 void embarca(int margem) {
     /* Aqui o passageiro embarca na margem especificada se possivel
@@ -31,35 +32,31 @@ void atravessa(int margem) {
 }
 
 int main(int argc, char *argv[]) {
-    int margem, memkey, semkey;
-    union semun arg;
-    struct sembuf wait={0, -1, 0};
-    struct sembuf signal={0, 1, 0};
-
-    srand(time(NULL));
-
-    /* Incialização dos semáforos. */
-    semInit();
-
-    /* Inicialização da memória compartilhada. */
-    /*memkey = getMemKey();*/
-    shmInit();
-
-    proc.id = getpid();
-    printf("PID = %d\n", proc.id);
-    /*sleep(100);*/
 
     if ( argc != 2 ) printf("Passar margem. 0 = Esquerda, 1 = Direita. \n");
     else {
-        margem = atoi(argv[1]);
-        embarca(margem);
-        atravessa(margem);
-        desembarca(margem);
+        /* Semente para o RNG. */
+        srand(time(NULL));
+
+        /* Incialização dos semáforos. */
+        semInit();
+
+        /* Inicialização da memória compartilhada. */
+        shmInit();
+
+        passageiro.id = getpid();
+        printf("PID = %d\n", passageiro.id);
+
+        passageiro.margem = atoi(argv[1]);
+        embarca(passageiro.margem);
+        atravessa(passageiro.margem);
+        desembarca(passageiro.margem);
+
+        shmDetach();
+        shmRemove(); 
+        semCleanUp();
     }
 
-    shmDetach();
-    shmRemove(); 
-    semRemove();
     /* imprime passageiro saiu do pier */
     return EXIT_SUCCESS;
 }
