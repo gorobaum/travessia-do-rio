@@ -10,9 +10,6 @@
 #include "shmemo.h"
 #include "semaf.h"
 
-#define ESQUERDA 0
-#define DIREITA 1
-
 /* Informações sobre este processo. */
 static struct {
     int id;

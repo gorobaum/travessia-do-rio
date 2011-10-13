@@ -12,27 +12,14 @@
 #define SEMKEY_PATH_NAME    "Makefile"
 #define SEMKEY_PROJ_ID      'A'
 
-#define MAX_NOPS            (8)
-
-#define OP_NUM              (2)
-#define OP_WAIT             (-1)
-#define OP_SIGNAL           (1)
-
-/* Acho que vamos precisar de quatro semáforos. */
-#define SEM_NUM             (3)
-/* Semáforo MUTEX da memória compartilhada. */
-#define SHM_MUTEX           (0)
-/* Semáforos MUTEX para cada margem do rio. */
-#define SHIP_MUTEX(margin)  ((margin%2)+1)
-
 #define SEMOP(op, sem) { sem, op, 0 }
 
 /* Semáforos. */
 static struct {
     int             id;
     size_t          nops;
-    /*struct sembuf   ops[MAX_NOPS];*/
-} sem = { -1, 0 };
+    struct sembuf   ops[MAX_NOPS];
+} sem;
 
 /* Devolve a chave usada para identificar os semáforos. */
 static int getSemKey() {
@@ -64,6 +51,7 @@ void semInit() {
         semop(sem.id, &signal_shm, 1);
     }
     else sem.id = semget(semkey, SEM_NUM, 0666 );
+    sem.nops = 0;
     waitFirstOp();
 }
 
