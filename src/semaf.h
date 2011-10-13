@@ -13,6 +13,10 @@ union semun {
  * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
 
+void semWait(int semaph);
+
+void semSignal(int semaph);
+
 void semCtl(int id, union semun arg);
 
 /* Remove os semáforos do sistema. */

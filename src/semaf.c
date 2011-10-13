@@ -12,6 +12,8 @@
 #define SEMKEY_PATH_NAME    "Makefile"
 #define SEMKEY_PROJ_ID      'A'
 
+#define MAX_NOPS            (8)
+
 #define OP_NUM              (2)
 #define OP_WAIT             (-1)
 #define OP_SIGNAL           (1)
@@ -27,8 +29,10 @@
 
 /* Semáforos. */
 static struct {
-    int id;
-} sem = { -1 };
+    int             id;
+    size_t          nops;
+    /*struct sembuf   ops[MAX_NOPS];*/
+} sem = { -1, 0 };
 
 /* Devolve a chave usada para identificar os semáforos. */
 static int getSemKey() {
@@ -61,6 +65,16 @@ void semInit() {
     }
     else sem.id = semget(semkey, SEM_NUM, 0666 );
     waitFirstOp();
+}
+
+void semWait(int semaph) {
+    struct sembuf signal = SEMOP(OP_WAIT, semaph);
+    semop(sem.id, &signal, 1);
+}
+
+void semSignal(int semaph) {
+    struct sembuf signal = SEMOP(OP_SIGNAL, semaph);
+    semop(sem.id, &signal, 1);
 }
 
 void semCtl( int id, union semun arg ) {

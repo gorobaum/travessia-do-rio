@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
-#include <shmemo.h>
+
+#include "shmemo.h"
 
 #define SHM_SIZE            (sizeof(shm_data))
 #define KEY_PATH_NAME       "src/passageiro.c"
