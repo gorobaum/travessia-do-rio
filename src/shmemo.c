@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include <sys/shm.h>
@@ -53,6 +54,11 @@ void shmInit() {
     semSignal(SHM_MUTEX);
 }
 
+int shmCheck() {
+    struct shmid_ds buf;
+    return !(shmctl(shm.id, IPC_STAT, &buf) == -1 && errno == EIDRM);
+}
+
 void shmLock() {
     semWait(SHM_MUTEX);
 }
@@ -73,6 +79,7 @@ void shmCleanUp() {
     semWait(SHM_MUTEX);
     passenger_num = shm.data->passenger_num--;
     shmdt((void*)shm.data);
+    shm.data = NULL;
     if ( passenger_num == 0 ) { 
         shmctl(shm.id, IPC_RMID, 0);
         puts("Memória compartilhada removida.");

@@ -13,6 +13,8 @@ typedef struct {
  * cria ela. */
 void shmInit();
 
+int shmCheck();
+
 void shmLock();
 
 void shmUnlock();

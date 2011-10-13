@@ -41,6 +41,8 @@ void semExecOps();
 /* Operação wait sobre o semáforo indicado. */
 void semWait(int semaph);
 
+void semSafeWait(int semaph);
+
 int semTimedWait(int semaph, size_t secs);
 
 /* Operação signal sobre o semáforo passado. */

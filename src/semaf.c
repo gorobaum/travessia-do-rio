@@ -1,5 +1,7 @@
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <semaphore.h>
 #include <time.h>
 #include <sys/shm.h>
@@ -35,16 +37,36 @@ static int getSemKey() {
     return ftok( SEMKEY_PATH_NAME, SEMKEY_PROJ_ID);
 }
 
+static void safe_semop(struct sembuf *ops, size_t nops) {
+    if (semop(sem.id, ops, nops) == -1)
+        switch(errno) {
+            case EIDRM:
+                semInit();
+                break;
+            default:
+                puts("Unknown error.");
+                exit(EXIT_FAILURE);
+                break;
+        }
+}
+
 /* Espera até que a primeira operação seja executado sobre
  * os semáforos, garantindo que eles estejam inicializados
  * após essa função retornar. */
-static void waitFirstOp() {
+static int waitFirstOp() {
     struct semid_ds buf;
     union semun arg;
 
     arg.buf = &buf;
-    do semctl(sem.id, 0, IPC_STAT, arg);
+    do if (semctl(sem.id, 0, IPC_STAT, arg) == -1) {
+        if (errno == EIDRM) return 0;
+        else {
+            puts("Unknown error.");
+            exit(EXIT_FAILURE);
+        }
+    }
     while (buf.sem_otime == 0);
+    return 1;
 }
 
 void semInit() {
@@ -55,13 +77,16 @@ void semInit() {
 
     arg.array = initial_values;
     printf("SEM key: 0x%x\n", semkey);
-    if ((sem.id = semget(semkey, SEM_NUM, IPC_CREAT | IPC_EXCL | 0666)) != -1) {
-        semctl(sem.id, 0, SETALL, arg);
-        semop(sem.id, &signal_shm, 1);
-    }
-    else sem.id = semget(semkey, SEM_NUM, 0666 );
+    do {
+        sem.id = semget(semkey, SEM_NUM, IPC_CREAT | IPC_EXCL | 0666);
+        if (sem.id != -1) {
+            semctl(sem.id, 0, SETALL, arg);
+            semop(sem.id, &signal_shm, 1);
+            break;
+        }
+        else sem.id = semget(semkey, SEM_NUM, 0666);
+    } while ((sem.id == -1 && errno == ENOENT) || !waitFirstOp());
     sem.nops = 0;
-    waitFirstOp();
 }
 
 void semAddOp(int semaph, int op) {

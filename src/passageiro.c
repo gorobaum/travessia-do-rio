@@ -67,13 +67,13 @@ int main(int argc, char *argv[]) {
         /* Semente para o RNG. */
         srand(time(NULL));
 
-        atexit(cleanUp);
-
         /* Incialização dos semáforos. */
         semInit();
 
         /* Inicialização da memória compartilhada. */
         shmInit();
+
+        atexit(cleanUp);
 
         passageiro.id = getpid();
         printf("PID = %d\n", passageiro.id);
