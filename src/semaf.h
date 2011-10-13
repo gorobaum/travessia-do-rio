@@ -13,14 +13,12 @@
 #define SEM_NUM             (6)
 /* Semáforo MUTEX da memória compartilhada. */
 #define SHM_MUTEX           (0)
-#define EMBLEFT             (1)
-#define EMBRIGHT            (2)
-#define DESLEFT             (3)
-#define DESRIGHT            (4)
-#define T                   (5)
-
-/* Semáforos MUTEX para cada margem do rio. */
-#define SHIP_MUTEX(margin)  ((margin%2)+1)
+/* Semáforos MUTEX de embarcar em cada margem do rio. */
+#define EMBARK_MUTEX(margin)  ((margin%2)+1)
+/* Semáforos MUTEX de desembarcar em cada margem do rio. */
+#define DESEMBARK_MUTEX(margin)  ((margin%2)+3)
+/* Semáforo de barreira para a travessia. */
+#define PASSAGE_BARRIER     (5)
 
 /* Margens do rio. */
 #define ESQUERDA            (0)
@@ -54,11 +52,8 @@ void semWait(int semaph);
 /* Operação signal sobre o semáforo passado. */
 void semSignal(int semaph);
 
-/* Depracated? */
-void semCtl(int id, union semun arg);
-
 /* Remove os semáforos do sistema. */
-void semRemove();
+void semCleanUp();
 
 #endif
 

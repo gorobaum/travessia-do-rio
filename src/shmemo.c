@@ -18,13 +18,6 @@
 #define MAX_SHIP_CAPACITY   (3)
 #define RANDOM_MARGIN       (rand()%2)
 
-/* Dados compartilhados. */
-typedef struct {
-    size_t  passenger_num;
-    int     ship_current_margin;
-    size_t  ship_capacity;
-} shm_data;
-
 /* Memória compartilhada. */
 static struct {
     int         id;
@@ -40,8 +33,9 @@ static void loadDefaultValues() {
     shm.data->passenger_num = 0;
     shm.data->ship_current_margin = RANDOM_MARGIN;
     shm.data->ship_capacity = MAX_SHIP_CAPACITY;
-    if(shm.data->ship_current_margin == ESQUERDA) semSignal(EMBLEFT);
-    else semSignal(EMBRIGHT);
+    /* Libera o barco para os passageiros embarcarem. */
+    semSignal(EMBARK_MUTEX(shm.data->ship_current_margin));
+    printf("Barco inicializado na margem %d\n", shm.data->ship_current_margin);
 }
 
 void shmInit() {
@@ -59,27 +53,38 @@ void shmInit() {
     semSignal(SHM_MUTEX);
 }
 
+void shmLock() {
+    semWait(SHM_MUTEX);
+}
+
+void shmUnlock() {
+    semSignal(SHM_MUTEX);
+}
+
+void shmUpdateShipCapacity(int delta) {
+    semWait(SHM_MUTEX);
+    shm.data->ship_capacity += delta;
+    semSignal(SHM_MUTEX);
+}
+
 void shmCleanUp() {
     int passenger_num;
     
     semWait(SHM_MUTEX);
     passenger_num = shm.data->passenger_num--;
-    shmDetach();
-    if ( passenger_num == 0 ) shmRemove();
-    semSignal(SHM_MUTEX);
-}
-
-void shmDetach() {
     shmdt((void*)shm.data);
-}
-
-void shmRemove() {
-    shmctl(shm.id, IPC_RMID, 0);
-}
-
-void shmShipCapacityUpdate(int delta) {
-    semWait(SHM_MUTEX);
-    shm.data->ship_capacity += delta;
+    if ( passenger_num == 0 ) { 
+        shmctl(shm.id, IPC_RMID, 0);
+        puts("Memória compartilhada removida.");
+    }
     semSignal(SHM_MUTEX);
 }
+
+shm_data* shmGet() {
+    return shm.data;
+}
+
+
+
+
 

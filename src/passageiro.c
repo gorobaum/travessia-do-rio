@@ -16,21 +16,43 @@ static struct {
     int margem;
 } passageiro = { 0, 0 };
 
+char *margens[2] = { "ESQUERDA", "DIREITA" };
+
 void embarca(int margem) {
-    semWait(SHIP_MUTEX(margem));
-    shmShipCapacityUpdate(-1);  
-    
-    semSignal(SHIP_MUTEX(margem));
+    shm_data *data;
+    semWait(EMBARK_MUTEX(margem));
+    /*shmUpdateShipCapacity(-1);  */
+    shmLock();
+    data = shmGet();
+    if (--data->ship_capacity)
+        semSignal(EMBARK_MUTEX(margem));
+    else {
+        data->ship_current_margin = !margem;
+        semAddOp(PASSAGE_BARRIER, 3*OP_SIGNAL);
+        semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
+        semExecOps();
+    }
+    shmUnlock();
 }
 
 void desembarca(int margem) {
     /* Aqui o passageiro desembarca do barco vindo da margem especificada
     e realiza quaisquer outras tarefas para dar continuidade a viagem
     de outros passageiros */
+    passageiro.margem = !margem;
 }
 
 void atravessa(int margem) {
     /* O barco atravessa o rio a partir da margem especificada */
+    printf("Passageiro 0x%x atravessando da margem %s para a margem %s.",
+           passageiro.id,
+           margens[passageiro.margem],
+           margens[!passageiro.margem]);
+}
+
+void cleanUp() {
+    shmCleanUp();
+    semCleanUp();
 }
 
 int main(int argc, char *argv[]) {
@@ -39,6 +61,8 @@ int main(int argc, char *argv[]) {
     else {
         /* Semente para o RNG. */
         srand(time(NULL));
+
+        atexit(cleanUp);
 
         /* Incialização dos semáforos. */
         semInit();
@@ -50,17 +74,16 @@ int main(int argc, char *argv[]) {
         printf("PID = %d\n", passageiro.id);
 
         passageiro.margem = atoi(argv[1]);
+        
         embarca(passageiro.margem);
+        /*
         atravessa(passageiro.margem);
         desembarca(passageiro.margem);
-
-        shmDetach();
-        shmRemove(); 
-        semCleanUp();
+        */
     }
 
-    shmCleanUp();
-    semCleanUp();
+    /*cleanUp();*/
+
     /* imprime passageiro saiu do pier */
     return EXIT_SUCCESS;
 }

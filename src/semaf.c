@@ -83,10 +83,6 @@ void semSignal(int semaph) {
     semop(sem.id, &signal, 1);
 }
 
-void semCtl( int id, union semun arg ) {
-    semctl(id, 0, SETVAL, arg);
-}
-
 void semCleanUp() {
     semctl(sem.id, 0, IPC_RMID, 0);
 }
