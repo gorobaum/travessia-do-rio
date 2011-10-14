@@ -50,6 +50,17 @@ void desembarca(int margem) {
     /* Aqui o passageiro desembarca do barco vindo da margem especificada
     e realiza quaisquer outras tarefas para dar continuidade a viagem
     de outros passageiros */
+    shm_data *data;
+    semAddOp(PASSAGE_BARRIER, OP_WAIT);
+    semAddOp(DESEMBARK_MUTEX(!margem), OP_WAIT);
+    semAddOp(SHM_MUTEX, OP_WAIT);
+    semExecOps();
+    data = shmGet();
+    if (++data->ship_capacity < 3)
+        semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
+    else
+        semAddOp(EMBARK_MUTEX(!margem), OP_SIGNAL);
+    semFinishingSignal(SHM_MUTEX);
     passageiro.margem = !margem;
 }
 
