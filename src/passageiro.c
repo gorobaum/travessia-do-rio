@@ -7,6 +7,7 @@
 #include <sys/sem.h>
 #include <unistd.h>
 
+#include "defs.h"
 #include "shmemo.h"
 #include "semaf.h"
 
@@ -18,6 +19,13 @@ static struct {
 
 char *margens[2] = { "ESQUERDA", "DIREITA" };
 
+static void init() {
+    semInit();
+    semSafeWait(SHM_MUTEX);
+    shmInit();
+    semSignal(SHM_MUTEX);
+}
+
 void embarca(int margem) {
     shm_data *data;
     if(!semTimedWait(EMBARK_MUTEX(margem), 10)) {
@@ -25,7 +33,7 @@ void embarca(int margem) {
         exit(EXIT_SUCCESS);
     }
     /*shmUpdateShipCapacity(-1);  */
-    shmLock();
+    semWait(SHM_MUTEX);
     data = shmGet();
     if (--data->ship_capacity)
         semAddOp(EMBARK_MUTEX(margem), OP_SIGNAL);
@@ -35,9 +43,7 @@ void embarca(int margem) {
         semAddOp(PASSAGE_BARRIER, 3*OP_SIGNAL);
         semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
     }
-    semAddOp(SHM_MUTEX, OP_SIGNAL);
-    semExecOps();
-    /*shmUnlock();*/
+    semFinishingSignal(SHM_MUTEX);
 }
 
 void desembarca(int margem) {
@@ -49,7 +55,7 @@ void desembarca(int margem) {
 
 void atravessa(int margem) {
     /* O barco atravessa o rio a partir da margem especificada */
-    printf("Passageiro 0x%x atravessando da margem %s para a margem %s.",
+    printf("Passageiro 0x%x atravessando da margem %s para a margem %s.\n",
            passageiro.id,
            margens[passageiro.margem],
            margens[!passageiro.margem]);
@@ -57,7 +63,6 @@ void atravessa(int margem) {
 
 void cleanUp() {
     shmCleanUp();
-    semCleanUp();
 }
 
 int main(int argc, char *argv[]) {
@@ -67,11 +72,8 @@ int main(int argc, char *argv[]) {
         /* Semente para o RNG. */
         srand(time(NULL));
 
-        /* Incialização dos semáforos. */
-        semInit();
-
-        /* Inicialização da memória compartilhada. */
-        shmInit();
+        /* Inicializa recursos para esse processo. */
+        init();
 
         atexit(cleanUp);
 
@@ -81,10 +83,8 @@ int main(int argc, char *argv[]) {
         passageiro.margem = atoi(argv[1]);
         
         embarca(passageiro.margem);
-        /*
         atravessa(passageiro.margem);
         desembarca(passageiro.margem);
-        */
     }
 
     /*cleanUp();*/

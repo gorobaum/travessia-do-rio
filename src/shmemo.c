@@ -43,7 +43,6 @@ void shmInit() {
     int do_init = 0,
         memkey = getMemKey();
     printf("SHM key: %x\n", memkey);
-    semWait(SHM_MUTEX); 
     if ((shm.id = shmget(memkey, SHM_SIZE, 0666)) == -1) {
         shm.id = shmget(memkey, SHM_SIZE, IPC_CREAT | 0666);
         do_init = 1;
@@ -51,7 +50,6 @@ void shmInit() {
     shm.data = (shm_data*)shmat(shm.id, 0, 0);
     if (do_init) loadDefaultValues();
     shm.data->passenger_num++;
-    semSignal(SHM_MUTEX);
 }
 
 int shmCheck() {
@@ -77,14 +75,15 @@ void shmCleanUp() {
     int passenger_num;
     
     semWait(SHM_MUTEX);
-    passenger_num = shm.data->passenger_num--;
+    passenger_num = --shm.data->passenger_num;
     shmdt((void*)shm.data);
     shm.data = NULL;
     if ( passenger_num == 0 ) { 
+        puts("Removendo recursos do sistema.");
         shmctl(shm.id, IPC_RMID, 0);
-        puts("Memória compartilhada removida.");
+        semCleanUp();
     }
-    semSignal(SHM_MUTEX);
+    else semSignal(SHM_MUTEX);
 }
 
 shm_data* shmGet() {

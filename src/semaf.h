@@ -1,3 +1,4 @@
+
 #ifndef SEMAF_H_
 #define SEMAF_H_
 
@@ -20,10 +21,6 @@
 /* Semáforo de barreira para a travessia. */
 #define PASSAGE_BARRIER     (5)
 
-/* Margens do rio. */
-#define ESQUERDA            (0)
-#define DIREITA             (1)
-
 /* Inicializa os semáforos para esse proccesso.
  * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
@@ -41,12 +38,22 @@ void semExecOps();
 /* Operação wait sobre o semáforo indicado. */
 void semWait(int semaph);
 
+/* Faz o mesmo que a função acima, exceto que caso os
+ * semáforos tenham sido removidos, recria eles. */
 void semSafeWait(int semaph);
 
+/* Também faz o mesmo, só que devolve TRUE se o semáforo
+ * indicado foi liberado antes de timeout ou FALSE caso
+ * contrário. */
 int semTimedWait(int semaph, size_t secs);
 
 /* Operação signal sobre o semáforo passado. */
 void semSignal(int semaph);
+
+/* Fas o mesmo que a função acima, só que executa as
+ * operações adicionadas ao buffer junto com o signal,
+ * de maneira atômica. */
+void semFinishingSignal(int semaph);
 
 /* Remove os semáforos do sistema. */
 void semCleanUp();

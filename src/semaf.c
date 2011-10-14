@@ -10,6 +10,7 @@
 #include <sys/sem.h>
 #include <sys/ipc.h>
 
+#include "defs.h"
 #include "semaf.h"
 
 #define SEMKEY_PATH_NAME    "Makefile"
@@ -25,7 +26,7 @@ union semun {
     struct seminfo  *__buf;
 };
 
-/* Semáforos. */
+/* Informações sobre os semáforos. */
 static struct {
     int             id;
     size_t          nops;
@@ -37,13 +38,16 @@ static int getSemKey() {
     return ftok( SEMKEY_PATH_NAME, SEMKEY_PROJ_ID);
 }
 
-static void safe_semop(struct sembuf *ops, size_t nops) {
-    if (semop(sem.id, ops, nops) == -1)
+/* Exetuca as operações passadas de maneira segura, isso
+ * é, se os semáforos não existirem ele são criados. */
+static void semSafeOp(struct sembuf *ops, size_t nops) {
+    while (semop(sem.id, ops, nops) == -1)
         switch(errno) {
             case EIDRM:
                 semInit();
                 break;
             default:
+                /* Nunca deve acontecer. */
                 puts("Unknown error.");
                 exit(EXIT_FAILURE);
                 break;
@@ -52,21 +56,24 @@ static void safe_semop(struct sembuf *ops, size_t nops) {
 
 /* Espera até que a primeira operação seja executado sobre
  * os semáforos, garantindo que eles estejam inicializados
- * após essa função retornar. */
+ * se função retornar TRUE.
+ * Devolve FALSE caso os semáforos tenham sido destruídos
+ * nesse meio tempo. */
 static int waitFirstOp() {
     struct semid_ds buf;
-    union semun arg;
+    union semun     arg;
 
     arg.buf = &buf;
     do if (semctl(sem.id, 0, IPC_STAT, arg) == -1) {
-        if (errno == EIDRM) return 0;
+        if (errno == EIDRM) return FALSE;
         else {
+            /* Nunca deve acontecer. */
             puts("Unknown error.");
             exit(EXIT_FAILURE);
         }
     }
     while (buf.sem_otime == 0);
-    return 1;
+    return TRUE;
 }
 
 void semInit() {
@@ -111,6 +118,12 @@ void semWait(int semaph) {
     semop(sem.id, &signal, 1);
 }
 
+void semSafeWait(int semaph) {
+    struct sembuf signal = SEMOP(OP_WAIT, 0);
+    signal.sem_num = semaph;
+    semop(sem.id, &signal, 1);
+}
+
 int semTimedWait(int semaph, size_t secs) {
     struct sembuf   signal = SEMOP(OP_WAIT, 0);
     struct timespec timeout = { 0, 0 };
@@ -124,7 +137,12 @@ int semTimedWait(int semaph, size_t secs) {
 void semSignal(int semaph) {
     struct sembuf signal = SEMOP(OP_SIGNAL, 0);
     signal.sem_num = semaph;
-    semop(sem.id, &signal, 1);
+    semSafeOp(&signal, 1);
+}
+
+void semFinishingSignal(int semaph) {
+    semAddOp(semaph, OP_SIGNAL);
+    semExecOps();
 }
 
 void semCleanUp() {
