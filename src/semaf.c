@@ -80,7 +80,7 @@ void semInit() {
     union semun     arg;
     int             semkey = getSemKey();
     unsigned short  initial_values[] = { 0, 0, 0 };
-    struct sembuf   signal_shm = SEMOP(OP_SIGNAL, SHM_MUTEX);
+    struct sembuf   signal_shm = SEMOP(3*OP_SIGNAL, SHM_MUTEX);
 
     arg.array = initial_values;
     printf("SEM key: 0x%x\n", semkey);
@@ -110,6 +110,18 @@ void semExecOps() {
         semop(sem.id, sem.ops, sem.nops);
         sem.nops = 0;
     }
+}
+
+int semExecTimedOps(size_t secs) {
+    struct timespec timeout = { 0, 0 };
+    int             expired = TRUE;
+    timeout.tv_sec = secs;
+    if (sem.nops > 0) {
+        if (semtimedop(sem.id, sem.ops, sem.nops, &timeout) == -1)
+            if (errno == EAGAIN) expired = FALSE;
+        sem.nops = 0;
+    }
+    return expired;
 }
 
 void semWait(int semaph) {

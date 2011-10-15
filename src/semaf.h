@@ -9,6 +9,8 @@
 #define OP_WAIT             (-1)
 /* Operação signal. */
 #define OP_SIGNAL           (1)
+/* Operação synchronize. (age como uma barreira) */
+#define OP_SYNC             (0)
 
 /* Nós usamos seis semáforos. */
 #define SEM_NUM             (6)
@@ -34,6 +36,8 @@ void semAddOp(int semaph, int op);
 /* Executa as operações que foram adicionadas de maneira
  * atômica, e depois limpa o buffer de operações. */
 void semExecOps();
+
+int semExecTimedOps(size_t secs);
 
 /* Operação wait sobre o semáforo indicado. */
 void semWait(int semaph);
