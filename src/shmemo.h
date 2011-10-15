@@ -8,24 +8,24 @@ typedef struct {
     size_t  ship_capacity;
 } shm_data;
 
-int shmCheck();
-
-void shmLock();
-
-void shmUnlock();
-
+/* Desacopla a memória compartilhada desse processo.
+ * Se nenhum outro processo estiver declaradamente usando
+ * os recursos, estes são liberados. */
 void shmCleanUp();
 
-/* OBS: essas funções exigem regiões críticas. */
+/******** !!! AS FUNÇÕES ABAIXO REQUEREM TRAVA !!! ********/
 
 /* Inicializa a memória compartilhada, verificando se ela
  * já não foi criada. Se já foi, recupera ela. Se não,
  * cria ela. */
 void shmInit();
 
+/*  */
 shm_data* shmGet();
 
-void shmUpdateShipCapacity(int delta);
+int shmUpdateShipCapacity(int delta);
+
+void shmSetShipMargin(int margin);
 
 
 #endif

@@ -55,23 +55,12 @@ void shmInit() {
     shm.data->passenger_num++;
 }
 
-int shmCheck() {
-    struct shmid_ds buf;
-    return !(shmctl(shm.id, IPC_STAT, &buf) == -1 && errno == EIDRM);
+int shmUpdateShipCapacity(int delta) {
+    return (shm.data->ship_capacity += delta);
 }
 
-void shmLock() {
-    semWait(SHM_MUTEX);
-}
-
-void shmUnlock() {
-    semSignal(SHM_MUTEX);
-}
-
-void shmUpdateShipCapacity(int delta) {
-    semWait(SHM_MUTEX);
-    shm.data->ship_capacity += delta;
-    semSignal(SHM_MUTEX);
+void shmSetShipMArgin(int margin) {
+    shm.data->ship_current_margin = margin;
 }
 
 void shmCleanUp() {
@@ -82,7 +71,7 @@ void shmCleanUp() {
     shmdt((void*)shm.data);
     shm.data = NULL;
     if ( passenger_num == 0 ) { 
-        puts("Removendo recursos do sistema.");
+        puts("[INFO] Removendo recursos do sistema.");
         shmctl(shm.id, IPC_RMID, 0);
         semCleanUp();
     }

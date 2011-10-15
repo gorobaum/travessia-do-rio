@@ -20,7 +20,7 @@ static struct {
     size_t  countdown;
 } passageiro = { 0, 0, MAX_TIMEOUT };
 
-char *margens[2] = { "ESQUERDA", "DIREITA" };
+static char *margens[2] = { "ESQUERDA", "DIREITA" };
 
 static void init() {
     semInit();
@@ -43,18 +43,7 @@ void embarca(int margem) {
     printf("[PASSAGEIRO %d] Esperando na margem %s.\n",
             passageiro.id,
             margens[margem]);
-    /*
-    resetCountdown();
-    timedWait(EMBARK_MUTEX(margem), NULL);
-    ---
-    semAddOp(EMBARK_MUTEX(margem), OP_WAIT);
-    semAddOp(EMBARK_MUTEX(margem), OP_SYNC);
-    if (!semExecTimedOps(MAX_TIMEOUT)) {
-        printf("[PASSAGEIRO 0x%x] Desistiu da viagem.\n", passageiro.id);
-        exit(EXIT_SUCCESS);
-    }
-    */
-
+    
     for (count = 10; count; count--) {
         semWait(SHM_MUTEX);
         data = shmGet();
@@ -94,37 +83,12 @@ void embarca(int margem) {
            passageiro.id,
            margens[margem]);
 
-    printf("[INFO] Barreira com %d.\n", semCheck(EMBARK_MUTEX(margem)));
+    /*printf("[INFO] Barreira com %d.\n", semCheck(EMBARK_MUTEX(margem)));*/
     semWait(EMBARK_MUTEX(margem));
-    printf("[PASSAGEIRO %d] Na barreira.\n", passageiro.id);
+    /*printf("[PASSAGEIRO %d] Na barreira.\n", passageiro.id);*/
     semAddOp(EMBARK_MUTEX(margem), OP_SYNC);
     semExecOps();
 
-    /*shmUpdateShipCapacity(-1);  */
-    /*timedWait(PASSAGE_BARRIER, giveUp);*/
-    /*
-    semWait(SHM_MUTEX);
-    data = shmGet();
-    */
-    /*if (--data->ship_capacity)
-        semAddOp(EMBARK_MUTEX(margem), OP_SIGNAL);
-    
-    else {
-    */
-    /*
-    if (--data->ship_capacity == 0) {
-        printf("[BARCO] Partindo da margem %s para a margem %s.\n",
-                margens[margem],
-                margens[!margem]);
-        data->ship_current_margin = !margem;
-        semAddOp(PASSAGE_BARRIER, 3*OP_SIGNAL);
-        semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
-    }
-    semSignal(SHM_MUTEX);
-
-    semAddOp(PASSAGE_BARRIER, OP_WAIT);
-    semExecOps();
-    */
 }
 
 /* Aqui o passageiro desembarca do barco vindo da margem
@@ -136,12 +100,6 @@ void desembarca(int margem) {
     semAddOp(SHM_MUTEX, OP_WAIT);
     semExecOps();
     data = shmGet();
-    /*
-    if (++data->ship_capacity < 3)
-        semAddOp(DESEMBARK_MUTEX(!margem), OP_SIGNAL);
-    else
-        semAddOp(EMBARK_MUTEX(!margem), 3*OP_SIGNAL);
-        */
     if (++data->ship_capacity == 3)
         data->ship_current_margin = !margem;
     /*semFinishingSignal(SHM_MUTEX);*/
@@ -152,8 +110,9 @@ void desembarca(int margem) {
     semSignal(SHM_MUTEX);
 }
 
+/* O barco atravessa o rio a partir da margem
+ * especificada. */
 void atravessa(int margem) {
-    /* O barco atravessa o rio a partir da margem especificada */
     printf("[PASSAGEIRO %d] Atravessando da margem %s para a margem %s.\n",
            passageiro.id,
            margens[passageiro.margem],

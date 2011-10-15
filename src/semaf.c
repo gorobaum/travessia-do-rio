@@ -95,10 +95,6 @@ void semInit() {
     } while ((sem.id == -1 && errno == ENOENT) || !waitFirstOp());
     sem.nops = 0;
 }
-
-int semCheck(int semaph) {
-    return semctl(sem.id, semaph, GETVAL);
-}
  
 void semAddOp(int semaph, int op) {
     if (sem.nops == MAX_NOPS)
@@ -109,27 +105,11 @@ void semAddOp(int semaph, int op) {
     sem.nops++;
 }
 
-void semCleanOps() {
-    sem.nops = 0;
-}
-
 void semExecOps() {
     if (sem.nops > 0) {
         semop(sem.id, sem.ops, sem.nops);
         sem.nops = 0;
     }
-}
-
-int semExecTimedOps(size_t secs) {
-    struct timespec timeout = { 0, 0 };
-    int             expired = TRUE;
-    timeout.tv_sec = secs;
-    if (sem.nops > 0) {
-        if (semtimedop(sem.id, sem.ops, sem.nops, &timeout) == -1)
-            if (errno == EAGAIN) expired = FALSE;
-        sem.nops = 0;
-    }
-    return expired;
 }
 
 void semWait(int semaph) {
@@ -142,16 +122,6 @@ void semSafeWait(int semaph) {
     struct sembuf signal = SEMOP(OP_WAIT, 0);
     signal.sem_num = semaph;
     semop(sem.id, &signal, 1);
-}
-
-int semTimedWait(int semaph, size_t secs) {
-    struct sembuf   signal = SEMOP(OP_WAIT, 0);
-    struct timespec timeout = { 0, 0 };
-    signal.sem_num = semaph;
-    timeout.tv_sec = secs;
-    if (semtimedop(sem.id, &signal, 1, &timeout) == -1)
-        if (errno == EAGAIN) return 0;
-    return 1;
 }
 
 void semSignal(int semaph) {
