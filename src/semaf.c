@@ -96,6 +96,10 @@ void semInit() {
     sem.nops = 0;
 }
 
+int semCheck(int semaph) {
+    return semctl(sem.id, semaph, GETVAL);
+}
+ 
 void semAddOp(int semaph, int op) {
     if (sem.nops == MAX_NOPS)
         semExecOps();
@@ -103,6 +107,10 @@ void semAddOp(int semaph, int op) {
     sem.ops[sem.nops].sem_op = op;
     sem.ops[sem.nops].sem_flg = 0;
     sem.nops++;
+}
+
+void semCleanOps() {
+    sem.nops = 0;
 }
 
 void semExecOps() {

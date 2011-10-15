@@ -27,11 +27,15 @@
  * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
 
+int semCheck(int semaph);
+
 /* Adiciona uma operação op no semáforo específicado.
  * Para executar as operações adicionadas, chamar a função
  * semExecOps. Só podem ser adicionadas até MAX_NOPS
  * operações. */
 void semAddOp(int semaph, int op);
+
+void semCleanOps();
 
 /* Executa as operações que foram adicionadas de maneira
  * atômica, e depois limpa o buffer de operações. */

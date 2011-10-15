@@ -59,7 +59,10 @@ void embarca(int margem) {
         semWait(SHM_MUTEX);
         data = shmGet();
         if (data->ship_current_margin == margem && data->ship_capacity > 0) {
-            data->ship_capacity--;
+            if (--data->ship_capacity == 0) {
+                semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
+                semExecOps();
+            }
             semSignal(SHM_MUTEX);
             break;
         } else {
@@ -74,8 +77,6 @@ void embarca(int margem) {
         semWait(SHM_MUTEX);
         data = shmGet();
         if (data->ship_capacity == 0) {
-            semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
-            semExecOps();
             semSignal(SHM_MUTEX);
             break;
         } else if (count == 1) {
@@ -93,6 +94,7 @@ void embarca(int margem) {
            passageiro.id,
            margens[margem]);
 
+    printf("[INFO] Barreira com %d.\n", semCheck(EMBARK_MUTEX(margem)));
     semWait(EMBARK_MUTEX(margem));
     printf("[PASSAGEIRO %d] Na barreira.\n", passageiro.id);
     semAddOp(EMBARK_MUTEX(margem), OP_SYNC);
