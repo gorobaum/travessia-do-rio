@@ -36,19 +36,11 @@ static void checkTime(size_t count) {
     }
 }
 
-void embarca(int margem) {
-    shm_data    *data;
-    size_t      count;
-
-    printf("[PASSAGEIRO %d] Esperando na margem %s.\n",
-            passageiro.id,
-            margens[margem]);
-    
-    for (count = 10; count; count--) {
+static size_t tryToEmbark(int margem, size_t count) {
+    for (; count; count--) {
         semWait(SHM_MUTEX);
-        data = shmGet();
-        if (data->ship_current_margin == margem && data->ship_capacity > 0) {
-            if (--data->ship_capacity == 0) {
+        if (shmCheckShipMargin(margem) && shmGetShipCapacity() > 0) {
+            if (shmUpdateShipCapacity(-1) == 0) {
                 semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
                 semExecOps();
             }
@@ -59,25 +51,40 @@ void embarca(int margem) {
             sleep(1);
         }
     }
-
     checkTime(count);
+    return count;
+}
 
-    for (count; count; count--) {
+static void giveUp(size_t count) {
+    for (; count; count--) {
         semWait(SHM_MUTEX);
-        data = shmGet();
-        if (data->ship_capacity == 0) {
+        if (shmGetShipCapacity() == 0) {
             semSignal(SHM_MUTEX);
             break;
         } else if (count == 1) {
-            data->ship_capacity++;
+            shmUpdateShipCapacity(1);
             semSignal(SHM_MUTEX);
         } else {
             semSignal(SHM_MUTEX);
             sleep(1);
         }
     }
-    
     checkTime(count);
+}
+
+void embarca(int margem) {
+    shm_data    *data;
+    size_t      count = MAX_TIMEOUT;
+
+    printf("[PASSAGEIRO %d] Esperando na margem %s.\n",
+            passageiro.id,
+            margens[margem]);
+    
+    /* O passageiro tenta embarcar no braco. */
+    count = tryToEmbark(margem, count);
+
+    /* Já dentro do barco, o passageiro decide se continua ou desiste da viagem. */
+    giveUp(count);
 
     printf("[PASSAGEIRO %d] Embarcando na margem %s.\n",
            passageiro.id,

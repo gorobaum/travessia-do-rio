@@ -55,11 +55,19 @@ void shmInit() {
     shm.data->passenger_num++;
 }
 
-int shmUpdateShipCapacity(int delta) {
+size_t shmGetShipCapacity() {
+    return shm.data->ship_capacity;
+}
+
+size_t shmUpdateShipCapacity(int delta) {
     return (shm.data->ship_capacity += delta);
 }
 
-void shmSetShipMArgin(int margin) {
+int shmCheckShipMargin(int margin) {
+    return shm.data->ship_current_margin == margin;
+}
+
+void shmSetShipMargin(int margin) {
     shm.data->ship_current_margin = margin;
 }
 

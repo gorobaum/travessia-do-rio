@@ -23,7 +23,11 @@ void shmInit();
 /*  */
 shm_data* shmGet();
 
-int shmUpdateShipCapacity(int delta);
+size_t shmGetShipCapacity();
+
+size_t shmUpdateShipCapacity(int delta);
+
+int shmCheckShipMargin(int margin);
 
 void shmSetShipMargin(int margin);
 
