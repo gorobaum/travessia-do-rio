@@ -36,6 +36,43 @@ static void checkTime(size_t count) {
     }
 }
 
+static void tryToEmbark(size_t count) {
+    for (count = 10; count; count--) {
+        semWait(SHM_MUTEX);
+        data = shmGet();
+        if (data->ship_current_margin == margem && data->ship_capacity > 0) {
+            if (--data->ship_capacity == 0) {
+                semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
+                semExecOps();
+            }
+            semSignal(SHM_MUTEX);
+            break;
+        } else {
+            semSignal(SHM_MUTEX);
+            sleep(1);
+        }
+    }
+    checkTime(count);
+}
+
+static void giveUp(size_t count) {
+    for (; count; count--) {
+        semWait(SHM_MUTEX);
+        data = shmGet();
+        if (data->ship_capacity == 0) {
+            semSignal(SHM_MUTEX);
+            break;
+        } else if (count == 1) {
+            data->ship_capacity++;
+            semSignal(SHM_MUTEX);
+        } else {
+            semSignal(SHM_MUTEX);
+            sleep(1);
+        }
+    }
+    checkTime(count);
+}
+
 void embarca(int margem) {
     shm_data    *data;
     size_t      count;
@@ -54,41 +91,12 @@ void embarca(int margem) {
         exit(EXIT_SUCCESS);
     }
     */
-
-    for (count = 10; count; count--) {
-        semWait(SHM_MUTEX);
-        data = shmGet();
-        if (data->ship_current_margin == margem && data->ship_capacity > 0) {
-            if (--data->ship_capacity == 0) {
-                semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
-                semExecOps();
-            }
-            semSignal(SHM_MUTEX);
-            break;
-        } else {
-            semSignal(SHM_MUTEX);
-            sleep(1);
-        }
-    }
-
-    checkTime(count);
-
-    for (count; count; count--) {
-        semWait(SHM_MUTEX);
-        data = shmGet();
-        if (data->ship_capacity == 0) {
-            semSignal(SHM_MUTEX);
-            break;
-        } else if (count == 1) {
-            data->ship_capacity++;
-            semSignal(SHM_MUTEX);
-        } else {
-            semSignal(SHM_MUTEX);
-            sleep(1);
-        }
-    }
     
-    checkTime(count);
+    /* O passageiro tenta embarcar no braco. */
+    tryToEmbark(count);
+
+    /* Já dentro do barco, o passageiro decide se continua ou desiste da viagem. */
+    giveUp(count);
 
     printf("[PASSAGEIRO %d] Embarcando na margem %s.\n",
            passageiro.id,
