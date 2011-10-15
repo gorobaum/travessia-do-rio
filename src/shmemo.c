@@ -32,7 +32,8 @@ static int getMemKey() {
 
 static void loadDefaultValues() {
     shm.data->passenger_num = 0;
-    shm.data->ship_current_margin = RANDOM_MARGIN;
+    /*shm.data->ship_current_margin = RANDOM_MARGIN;*/
+    shm.data->ship_current_margin = 0;
     shm.data->ship_capacity = MAX_SHIP_CAPACITY;
     /* Libera o barco para os passageiros embarcarem.
     semAddOp(EMBARK_MUTEX(shm.data->ship_current_margin), 3*OP_SIGNAL);

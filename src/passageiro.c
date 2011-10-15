@@ -31,7 +31,7 @@ static void init() {
 
 static void checkTime(size_t count) {
     if (!count) {
-        printf("[PASSAGEIRO 0x%x] Desistiu da viagem.\n", passageiro.id);
+        printf("[PASSAGEIRO %d] Desistiu da viagem.\n", passageiro.id);
         exit(EXIT_SUCCESS);
     }
 }
@@ -40,7 +40,7 @@ void embarca(int margem) {
     shm_data    *data;
     size_t      count;
 
-    printf("[PASSAGEIRO 0x%x] Esperando na margem %s.\n",
+    printf("[PASSAGEIRO %d] Esperando na margem %s.\n",
             passageiro.id,
             margens[margem]);
     /*
@@ -74,8 +74,13 @@ void embarca(int margem) {
         semWait(SHM_MUTEX);
         data = shmGet();
         if (data->ship_capacity == 0) {
+            semAddOp(EMBARK_MUTEX(margem), 3*OP_SIGNAL);
+            semExecOps();
             semSignal(SHM_MUTEX);
             break;
+        } else if (count == 1) {
+            data->ship_capacity++;
+            semSignal(SHM_MUTEX);
         } else {
             semSignal(SHM_MUTEX);
             sleep(1);
@@ -84,9 +89,14 @@ void embarca(int margem) {
     
     checkTime(count);
 
-    printf("[PASSAGEIRO 0x%x] Embarcou na margem %s.\n",
-            passageiro.id,
-            margens[margem]);
+    printf("[PASSAGEIRO %d] Embarcando na margem %s.\n",
+           passageiro.id,
+           margens[margem]);
+
+    semWait(EMBARK_MUTEX(margem));
+    printf("[PASSAGEIRO %d] Na barreira.\n", passageiro.id);
+    semAddOp(EMBARK_MUTEX(margem), OP_SYNC);
+    semExecOps();
 
     /*shmUpdateShipCapacity(-1);  */
     /*timedWait(PASSAGE_BARRIER, giveUp);*/
@@ -134,15 +144,15 @@ void desembarca(int margem) {
         data->ship_current_margin = !margem;
     /*semFinishingSignal(SHM_MUTEX);*/
     passageiro.margem = !margem;
-    printf("[PASSAGEIRO 0x%x] Desembarcou na margem %s.\n",
+    printf("[PASSAGEIRO %d] Desembarcou na margem %s.\n",
             passageiro.id,
-            margens[margem]);
+            margens[!margem]);
     semSignal(SHM_MUTEX);
 }
 
 void atravessa(int margem) {
     /* O barco atravessa o rio a partir da margem especificada */
-    printf("[PASSAGEIRO 0x%x] Atravessando da margem %s para a margem %s.\n",
+    printf("[PASSAGEIRO %d] Atravessando da margem %s para a margem %s.\n",
            passageiro.id,
            margens[passageiro.margem],
            margens[!passageiro.margem]);

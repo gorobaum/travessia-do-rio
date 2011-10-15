@@ -79,8 +79,8 @@ static int waitFirstOp() {
 void semInit() {
     union semun     arg;
     int             semkey = getSemKey();
-    unsigned short  initial_values[] = { 0, 0, 0 };
-    struct sembuf   signal_shm = SEMOP(3*OP_SIGNAL, SHM_MUTEX);
+    unsigned short  initial_values[] = { 0, 0, 0, 0, 0, 0 };
+    struct sembuf   signal_shm = SEMOP(OP_SIGNAL, SHM_MUTEX);
 
     arg.array = initial_values;
     printf("SEM key: 0x%x\n", semkey);
