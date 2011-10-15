@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <semaphore.h>
 #include <time.h>
+
+#include <semaphore.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,10 +14,14 @@
 #include "defs.h"
 #include "semaf.h"
 
+/* Usados para gerar a chave dos semáforos. */
 #define SEMKEY_PATH_NAME    "Makefile"
 #define SEMKEY_PROJ_ID      'A'
 
-#define SEMOP(op, sem) { sem, op, 0 }
+/* Para facilitar. */
+#define SEMOP(op, sem)      { sem, op, 0 }
+
+/* ====================================================== */
 
 /* Union usada como quarto argumento da função semctl. */
 union semun {
@@ -32,6 +37,8 @@ static struct {
     size_t          nops;
     struct sembuf   ops[MAX_NOPS];
 } sem;
+
+/* ====================================================== */
 
 /* Devolve a chave usada para identificar os semáforos. */
 static int getSemKey() {
@@ -56,7 +63,7 @@ static void semSafeOp(struct sembuf *ops, size_t nops) {
 
 /* Espera até que a primeira operação seja executado sobre
  * os semáforos, garantindo que eles estejam inicializados
- * se função retornar TRUE.
+ * quando a função devolve TRUE.
  * Devolve FALSE caso os semáforos tenham sido destruídos
  * nesse meio tempo. */
 static int waitFirstOp() {
@@ -76,17 +83,20 @@ static int waitFirstOp() {
     return TRUE;
 }
 
+/* ====================================================== */
+
 void semInit() {
     union semun     arg;
     int             semkey = getSemKey();
-    unsigned short  initial_values[] = { 0, 0, 0, 0, 0, 0 };
+    unsigned short  initial_values[] = { 0, 0, 0 };
     struct sembuf   signal_shm = SEMOP(OP_SIGNAL, SHM_MUTEX);
 
     arg.array = initial_values;
-    printf("SEM key: 0x%x\n", semkey);
     do {
         sem.id = semget(semkey, SEM_NUM, IPC_CREAT | IPC_EXCL | 0666);
         if (sem.id != -1) {
+            /* Só entra aqui o que conseguiu criar os semáforos. */
+            printf("[INFO] Semáforos inicializados com chave 0x%x\n", semkey);
             semctl(sem.id, 0, SETALL, arg);
             semop(sem.id, &signal_shm, 1);
             break;
@@ -113,21 +123,27 @@ void semExecOps() {
 }
 
 void semWait(int semaph) {
-    struct sembuf signal = SEMOP(OP_WAIT, 0);
-    signal.sem_num = semaph;
-    semop(sem.id, &signal, 1);
+    struct sembuf wait = SEMOP(OP_WAIT, 0);
+    wait.sem_num = semaph;
+    semop(sem.id, &wait, 1);
 }
 
 void semSafeWait(int semaph) {
-    struct sembuf signal = SEMOP(OP_WAIT, 0);
-    signal.sem_num = semaph;
-    semop(sem.id, &signal, 1);
+    struct sembuf wait = SEMOP(OP_WAIT, 0);
+    wait.sem_num = semaph;
+    semSafeOp(&wait, 1);
 }
 
 void semSignal(int semaph) {
     struct sembuf signal = SEMOP(OP_SIGNAL, 0);
     signal.sem_num = semaph;
-    semSafeOp(&signal, 1);
+    semop(sem.id, &signal, 1);
+}
+
+void semSync(int semaph) {
+    struct sembuf sync = SEMOP(OP_SYNC, 0);
+    sync.sem_num = semaph;
+    semop(sem.id, &sync, 1);
 }
 
 void semFinishingSignal(int semaph) {

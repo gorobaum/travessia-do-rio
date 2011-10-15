@@ -2,7 +2,7 @@
 #ifndef SEMAF_H_
 #define SEMAF_H_
 
-/* Número máximo de operações bufferizáveis. */
+/* Tamanho do buffer de operações de semáforos. */
 #define MAX_NOPS                (8)
 
 /* Operação wait. */
@@ -12,29 +12,28 @@
 /* Operação synchronize. (age como uma barreira) */
 #define OP_SYNC                 (0)
 
-/* Nós usamos seis semáforos. */
-#define SEM_NUM                 (6)
+/* Nós usamos três semáforos. */
+#define SEM_NUM                 (3)
 /* Semáforo MUTEX da memória compartilhada. */
 #define SHM_MUTEX               (0)
-/* Semáforos MUTEX de embarcar em cada margem do rio. */
-#define EMBARK_MUTEX(margin)    ((margin%2)+1)
-/* Semáforos MUTEX de desembarcar em cada margem do rio. */
-#define DESEMBARK_MUTEX(margin) ((margin%2)+3)
-/* Semáforo de barreira para a travessia. */
-#define PASSAGE_BARRIER         (5)
+/* Semáforo de barreira para embarcar. */
+#define EMBARK                  (1)
+/* Semáforo de barreira para desembarcar. */
+#define DESEMBARK               (2)
 
 /* Inicializa os semáforos para esse proccesso.
  * Se os semáforos ainda não existirem, cria eles. */
 void semInit();
 
-/* Adiciona uma operação op no semáforo específicado.
- * Para executar as operações adicionadas, chamar a função
- * semExecOps. Só podem ser adicionadas até MAX_NOPS
+/* Adiciona a operação indicada no semáforo específicado.
+ * Para executar as operações adicionadas, basta chamar a
+ * função semExecOps. Só podem ser adicionadas até MAX_NOPS
  * operações. */
 void semAddOp(int semaph, int op);
 
-/* Executa as operações que foram adicionadas de maneira
- * atômica, e depois limpa o buffer de operações. */
+/* Executa seqüencialmente e atomicamente as operações
+ * que foram adicionadas ao buffer, e depois limpa o
+ * buffer. */
 void semExecOps();
 
 /* Operação wait sobre o semáforo indicado. */
@@ -47,9 +46,13 @@ void semSafeWait(int semaph);
 /* Operação signal sobre o semáforo passado. */
 void semSignal(int semaph);
 
-/* Fas o mesmo que a função acima, só que executa as
- * operações adicionadas ao buffer junto com o signal,
- * de maneira atômica. */
+/* Operação wait-zero sobre o semáforo passado.
+ * Funciona como uma barreira. */
+void semSync(int semaph);
+
+/* Faz o mesmo que a função acima, só que executa as
+ * operações adicionadas ao buffer e depois faz o signal,
+ * tudo de maneira atômica. */
 void semFinishingSignal(int semaph);
 
 /* Remove os semáforos do sistema. */
