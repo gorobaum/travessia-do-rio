@@ -27,6 +27,13 @@
 
 /* ====================================================== */
 
+/* Dados compartilhados. */
+typedef struct {
+    size_t  passenger_num;
+    int     ship_current_position;
+    size_t  ship_capacity;
+} shm_data;
+
 /* Memória compartilhada. */
 static struct {
     int         id;
@@ -44,10 +51,10 @@ static int getMemKey() {
 /* Carrega os valores padrão na memória compartilhada. */
 static void loadDefaultValues() {
     shm.data->passenger_num = 0;
-    shm.data->ship_current_margin = RANDOM_MARGIN;
+    shm.data->ship_current_position = RANDOM_MARGIN;
     shm.data->ship_capacity = MAX_CAP;
     printf("[BARCO] Inicializado na margem %s\n",
-           margins[shm.data->ship_current_margin]);
+           margins[shm.data->ship_current_position]);
 }
 
 /* ====================================================== */
@@ -77,12 +84,12 @@ size_t shmUpdateShipCapacity(int delta) {
     return (shm.data->ship_capacity += delta);
 }
 
-int shmCheckShipMargin(int margin) {
-    return shm.data->ship_current_margin == margin;
+int shmCheckShipPosition(int margin) {
+    return shm.data->ship_current_position == margin;
 }
 
-void shmSetShipMargin(int margin) {
-    shm.data->ship_current_margin = margin;
+void shmSetShipPosition(int margin) {
+    shm.data->ship_current_position = margin;
 }
 
 void shmCleanUp() {

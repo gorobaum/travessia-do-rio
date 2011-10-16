@@ -13,9 +13,36 @@
 
 /* ====================================================== */
 
-/* Número de tentativas necessárias para que o passageiro
- * desista da viagem. */
-#define MAX_TIMEOUT 10
+/* Um segundo em milissegundos. */
+#define ONE_SEC         1000
+
+/* Um milissegundo e nanossegundos. */
+#define ONE_MILISSEC    1000000
+
+/* Tempo máximo (em segundos) que o passageiro espera antes
+ * de desistir da viagem. */
+#define TIMEOUT         10
+
+/* Período de tempo (em milissegundos) que o passageiro
+ * espera entre uma tentativa e outra de embarcar ou partir
+ * com o barco. */
+#ifndef USE_NANO
+#define TIME_SLICE      ONE_SEC         /* 1s */
+#else
+#define TIME_SLICE      (ONE_SEC/10)    /* 0.1ms */
+#endif
+
+/* Número máximo de tentativas que o passageiro faz de
+ * embarcar e/ou partir com o barco. */
+#define MAX_COUNT       (TIMEOUT*ONE_SEC)/TIME_SLICE
+
+/* Macro que deve ser usada para deixar o processo
+ * dormindo. */
+#ifndef USE_NANO
+#define SLEEP(slice)    sleep(slice/1000)
+#else
+#define SLEEP(slice)    nanosleep(&slice, NULL);
+#endif
 
 /* ====================================================== */
 
@@ -23,10 +50,19 @@
 static struct {
     int     id;
     size_t  countdown;
-} passageiro = { 0, MAX_TIMEOUT };
+} passageiro = { 0, MAX_COUNT };
 
 /* Declarado no defs.h */
 const char *margins[2] = { "ESQUERDA", "DIREITA" };
+
+/* Variável global que representa o período de tempo que
+ * o passageiro dorme entre uma tentativa e outra. É usada
+ * pela macro SLEEP. */
+#ifndef USE_NANO
+const static unsigned int slice = TIME_SLICE;
+#else
+const static struct timespec slice = { 0, ONE_MILISSEC*TIME_SLICE };
+#endif
 
 /* ====================================================== */
 
@@ -56,10 +92,14 @@ static void tryToEmbark(int margem) {
         semWait(SHM_MUTEX);
         /* Verifica se o barco está nessa margem e se tem
          * espaço para o passageiro entrar. */
-        if (shmCheckShipMargin(margem) && shmGetShipCapacity() > 0) {
+        if (shmCheckShipPosition(margem) && shmGetShipCapacity() > 0) {
             /* Decrementa capacidade do barco e verifica se
              * foi o último. */
             if (shmUpdateShipCapacity(-1) == 0) {
+                /* Impede que outros passageiros embarquem
+                 * enquanto que os atuais não tiverem
+                 * desembarcado.*/
+                shmSetShipPosition(NAVEGANDO);
                 /* Prepara as barreiras. */
                 semAddOp(EMBARK, 3*OP_SIGNAL);
                 semAddOp(DESEMBARK, 3*OP_SIGNAL);
@@ -70,7 +110,7 @@ static void tryToEmbark(int margem) {
         } else {
             /* Tenta de novo. */
             semSignal(SHM_MUTEX);
-            sleep(1);
+            SLEEP(slice);
         }
     }
     checkTime();
@@ -96,7 +136,7 @@ static void continueOrGiveUp() {
         } else {
             /* Tenta de novo. */
             semSignal(SHM_MUTEX);
-            sleep(1);
+            SLEEP(slice);
         }
     }
     checkTime();
@@ -145,7 +185,7 @@ void desembarca(int margem) {
     if (shmUpdateShipCapacity(1) == 3) {
         /* O último a descer atualiza a margem do barco. */
         printf("[BARCO] Agora na margem %s.\n", margins[!margem]);
-        shmSetShipMargin(!margem);
+        shmSetShipPosition(!margem);
     }
     semSignal(SHM_MUTEX);
 

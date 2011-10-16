@@ -6,9 +6,10 @@
 #define FALSE       (0)
 #define TRUE        (1)
 
-/* Margens do rio. */
+/* Posições em que o barco pode estar. */
 #define ESQUERDA    (0)
 #define DIREITA     (1)
+#define NAVEGANDO   (-1)
 
 /* Capacidade máxima do barco. */
 #define MAX_CAP     (3)

@@ -2,13 +2,6 @@
 #ifndef SHMEMO_H_
 #define SHMEMO_H_
 
-/* Dados compartilhados. */
-typedef struct {
-    size_t  passenger_num;
-    int     ship_current_margin;
-    size_t  ship_capacity;
-} shm_data;
-
 /* Desacopla a memória compartilhada desse processo.
  * Se nenhum outro processo estiver declaradamente usando
  * os recursos, estes são liberados. */
@@ -29,13 +22,13 @@ size_t shmGetShipCapacity();
  * do barco. */
 size_t shmUpdateShipCapacity(int delta);
 
-/* Verifica se a margem em que o barco se encontra no
+/* Verifica se a posição em que o barco se encontra no
  * momento é a mesma que a indicada. */
-int shmCheckShipMargin(int margin);
+int shmCheckShipPosition(int margin);
 
-/* Muda a margem em que o barco está no momento para a
- * margem indicada. */
-void shmSetShipMargin(int margin);
-
+/* Muda a posição em que o barco está no momento para a
+ * posição indicada. */
+void shmSetShipPosition(int margin);
 
 #endif
+
